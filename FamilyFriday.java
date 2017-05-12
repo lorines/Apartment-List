@@ -19,6 +19,7 @@ public class FamilyFriday implements ActionListener {
     private JFrame frame = new JFrame();
     private ArrayList<String> employees = new ArrayList<String>();
     private ArrayList<String> groups = new ArrayList<String>();
+    private ArrayList<String> history = new ArrayList<String>();
 
     public FamilyFriday() {
         loadEmployees();
@@ -73,10 +74,12 @@ public class FamilyFriday implements ActionListener {
               long seed = System.nanoTime();
               Collections.shuffle(employees, new Random(seed));
             }
+            //if not enough employees
             if (eCount < 3) {
               System.out.println("Not enough employees. There must be at least 3.\n");
               return;
             }
+            // minimum cases
             if (eCount == 3 || eCount == 4 || eCount == 5) {
               String tmp = "";
               for (int i = 0; i < eCount; i++) {
@@ -87,17 +90,36 @@ public class FamilyFriday implements ActionListener {
                 int min = 3;
                 int minTotal = eCount - (eCount % min);
 
+                // group names in 3's
                 int count = 0;
                 String tmp = "";
+                int addFlag = 1;
                 for (int j = 0; j < minTotal; j++) {
                   count++;
                   tmp = tmp + employees.get(j) + " ";
                   if (count == min) {
-                    groups.add(tmp);
-                    count = 0;
-                    tmp = "";
+                    String tmp2 = tmp;
+                    char[] chars = tmp2.toCharArray();
+                    Arrays.sort(chars);
+                    String sorted = new String(chars);
+                    for (int k = 0; k < history.size(); k++) {
+                      String hist = history.get(k);
+                      chars = hist.toCharArray();
+                      Arrays.sort(chars);
+                      String sortedHist = new String(chars);
+                      if (tmp2.equals(sortedHist)) {
+                        addFlag = 0;
+                      }
+                    }
+                    if (addFlag == 1) {
+                      groups.add(tmp);
+                      count = 0;
+                      tmp = "";
+                    }
+                    addFlag = 1;
                   }
                 }
+                // add anyone left out to the first couple groups available
                 if (minTotal < eCount) {
                   int i = minTotal;
                   for (int j = minTotal; j < eCount; j++) {
@@ -110,7 +132,7 @@ public class FamilyFriday implements ActionListener {
     }
 
     public void loadEmployees() {
-      //load file into array
+      //load names into array
       File file = new File("./Employees.txt");
       FileInputStream fis = null;
       BufferedReader reader = null;
@@ -137,13 +159,47 @@ public class FamilyFriday implements ActionListener {
               Logger.getLogger(FamilyFriday.class.getName()).log(Level.SEVERE, null, ex);
           }
       }
+
+      // load history
+      File file2 = new File("./GroupHistory.txt");
+      try {
+        fis = new FileInputStream(file2);
+        reader = new BufferedReader(new InputStreamReader(fis));
+
+        String line = reader.readLine();
+          while(line != null){
+            history.add(line);
+            line = reader.readLine();
+          }
+      } catch (FileNotFoundException ex) {
+          Logger.getLogger(FamilyFriday.class.getName()).log(Level.SEVERE, null, ex);
+      } catch (IOException ex) {
+          Logger.getLogger(FamilyFriday.class.getName()).log(Level.SEVERE, null, ex);
+      } finally {
+          try {
+              reader.close();
+              fis.close();
+          } catch (IOException ex) {
+              Logger.getLogger(FamilyFriday.class.getName()).log(Level.SEVERE, null, ex);
+          }
+      }
     }
 
     public void printGroups() {
       if (!groups.isEmpty()) {
         System.out.println("Generated group(s): \n");
+        String groupNames = "";
         for (int i = 0; i < groups.size(); i++) {
-          System.out.println("Group " + (i + 1) + ": " + groups.get(i));
+          groupNames = groups.get(i);
+          System.out.println("Group " + (i + 1) + ": " + groupNames);
+          try {
+            String filename= "GroupHistory.txt";
+            FileWriter fw = new FileWriter(filename,true);
+            fw.write(groupNames + "\n");//appends the string to the file
+            fw.close();
+          } catch(IOException ioe) {
+              System.err.println("IOException: " + ioe.getMessage());
+          }
         }
         groups.clear();
       }
